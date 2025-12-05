@@ -326,8 +326,8 @@
                         <!-- CUSTOM REMAP TOGGLE -->
                          <div class="flex items-center justify-between bg-black/20 p-2 rounded border border-yellow-800/30">
                             <div>
-                                <span class="text-xs text-yellow-400 font-bold block">G-Wechsel Spezial</span>
-                                <span class="text-[10px] text-yellow-200/70">C=C/G, D=G/G</span>
+                                <span class="text-xs text-yellow-400 font-bold block">Wechselbass C-Dur</span>
+                                <span class="text-[10px] text-yellow-200/70">Taste C=C, Taste D=G</span>
                             </div>
                             <div class="relative inline-block w-10 mr-2 align-middle select-none">
                                 <input type="checkbox" id="custom-remap-toggle" class="toggle-checkbox absolute block w-5 h-5 rounded-full bg-white border-4 appearance-none cursor-pointer" style="top:0; left:0; transition: all 0.3s;"/>
@@ -372,7 +372,11 @@
         
         // Active Notes Tracking
         let activeVoices = {}; // Local Audio Voices
-        let activeMidiNotes = {}; // To track MIDI NoteOffs
+        
+        // Tracking the STATE of notes to ensure NoteOff matches NoteOn mapping
+        // Key: InputNote (MIDI)
+        // Value: { bassNote: number, chordRoot: number }
+        let activeNoteState = {}; 
 
         let config = {
             localSound: true,
@@ -494,27 +498,43 @@
         function getRemappedNotes(inputNote) {
             let bassNote = inputNote;
             let chordRoot = inputNote;
+            let remapped = false;
 
-            // SPECIAL REMAP FOR G-Wechsel
+            // SPECIAL REMAP FOR C-Wechsel (User request: C->C, D->G Bass, Chord C for both)
             if (config.customRemap) {
                 const noteMod = inputNote % 12;
-                // If Note is C (0) -> Bass C, Chord G (7)
+                // If Note is C (0) -> Bass C, Chord C
                 if (noteMod === 0) { 
                     bassNote = inputNote;
-                    chordRoot = inputNote + 7; // G above C
+                    chordRoot = inputNote; // C Major
+                    remapped = true;
                 }
-                // If Note is D (2) -> Bass G (7) [Remap D to G], Chord G (7)
+                // If Note is D (2) -> Bass G (7) [Remap D to G], Chord C
                 else if (noteMod === 2) {
                     bassNote = inputNote + 5; // D + 5 semitones = G
-                    chordRoot = inputNote + 5; // G
+                    // We need Chord C. Input is D. C is D-2.
+                    chordRoot = inputNote - 2; 
+                    remapped = true;
                 }
             }
-            return { bassNote, chordRoot };
+            return { bassNote, chordRoot, remapped };
+        }
+
+        function getNoteName(midiVal) {
+            const notes = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
+            return notes[midiVal % 12];
         }
 
         function noteOn(note, velocity) {
-            // Apply Remap Logic
-            const { bassNote, chordRoot } = getRemappedNotes(note);
+            // Apply Remap Logic based on current settings
+            const { bassNote, chordRoot, remapped } = getRemappedNotes(note);
+            
+            // Store the state so we stop the correct notes later
+            activeNoteState[note] = { bassNote, chordRoot };
+
+            if(remapped) {
+                log(`Mapping: ${getNoteName(note)} -> Bass ${getNoteName(bassNote)} | Chd ${getNoteName(chordRoot)}`);
+            }
 
             // 1. Local Audio (Bass)
             // Use remapped Bass Note
@@ -535,7 +555,8 @@
                     updateChordUI();
                 }
                 
-                playGuitarChord(chordRoot, velocity, note); // Pass trigger note for tracking
+                // Pass trigger note for tracking, BUT calculate chords based on chordRoot
+                playGuitarChord(chordRoot, velocity, note); 
             }
 
             // Visuals
@@ -555,22 +576,36 @@
         }
 
         function noteOff(note) {
-            const { bassNote, chordRoot } = getRemappedNotes(note);
+            // Retrieve the state that was used when noteOn occurred
+            // This prevents stuck notes if settings changed while key held
+            const state = activeNoteState[note];
+            
+            if (!state) {
+                // Fallback if no state found (unlikely)
+                const fallback = getRemappedNotes(note);
+                stopEverything(note, fallback.bassNote);
+                return;
+            }
 
+            stopEverything(note, state.bassNote);
+            delete activeNoteState[note];
+        }
+
+        function stopEverything(triggerNote, bassNoteToStop) {
             // 1. Local Audio
-            if (activeVoices[note]) {
-                activeVoices[note].stop();
-                delete activeVoices[note];
+            if (activeVoices[triggerNote]) {
+                activeVoices[triggerNote].stop();
+                delete activeVoices[triggerNote];
             }
 
             // 2. MIDI Out (Bass)
-            sendMidiNote(config.outputChannelBass, bassNote, 0, 0);
+            sendMidiNote(config.outputChannelBass, bassNoteToStop, 0, 0);
 
             // 3. Guitar Logic (Stop Chord)
-            stopGuitarChord(note); // Use trigger note to find active chord
+            stopGuitarChord(triggerNote); // Use trigger note to find active chord
 
             // Visuals
-            highlightKey(note, false);
+            highlightKey(triggerNote, false);
         }
 
         // --- GUITAR CHORD LOGIC ---
