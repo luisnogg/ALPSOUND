@@ -119,6 +119,16 @@
         <button id="start-btn" class="px-8 py-3 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-full transition transform hover:scale-105 shadow-lg shadow-blue-500/30">
             System Starten
         </button>
+        
+        <!-- iOS Warning (Hidden by default) -->
+        <div id="ios-warning" class="hidden mt-4 bg-red-900/50 border border-red-500 p-4 rounded text-left max-w-xs">
+            <h3 class="text-red-400 font-bold text-sm mb-2">⚠️ iPhone/iPad erkannt</h3>
+            <p class="text-xs text-gray-300">
+                Der Safari-Browser unterstützt leider kein MIDI. 
+                <br><br>
+                <b>Lösung:</b> Lade die App <i>"Web MIDI Browser"</i> im AppStore und öffne diese Seite darin.
+            </p>
+        </div>
     </div>
 
     <div class="w-full max-w-6xl bg-gray-900/80 backdrop-blur rounded-xl border border-gray-800 shadow-2xl overflow-hidden p-4 md:p-6">
@@ -428,11 +438,19 @@
             document.getElementById('start-overlay').classList.add('hidden');
             log("Audio Engine gestartet.");
             
+            // Check for iOS
+            const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+
             // Init MIDI
             if (navigator.requestMIDIAccess) {
                 navigator.requestMIDIAccess({ sysex: false }).then(onMIDISuccess, onMIDIFailure);
             } else {
-                log("Fehler: Web MIDI nicht unterstützt.");
+                if(isIOS) {
+                    document.getElementById('ios-warning').classList.remove('hidden');
+                    log("Fehler: iOS Safari blockiert MIDI. Nutze 'Web MIDI Browser'.");
+                } else {
+                    log("Fehler: Web MIDI nicht unterstützt. Nutze Chrome/Edge.");
+                }
             }
         }
 
