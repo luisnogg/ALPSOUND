@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Web MIDI Bass & Guitar Router</title>
+    <title>Web MIDI Bass Mapper</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         body {
@@ -13,29 +13,14 @@
             overflow-x: hidden;
         }
         
-        /* Custom Range Slider Styling */
-        input[type=range] {
-            -webkit-appearance: none; 
-            background: transparent; 
-        }
-        
+        /* Custom Range Slider */
+        input[type=range] { -webkit-appearance: none; background: transparent; }
         input[type=range]::-webkit-slider-thumb {
-            -webkit-appearance: none;
-            height: 16px;
-            width: 16px;
-            border-radius: 50%;
-            background: #3b82f6;
-            cursor: pointer;
-            margin-top: -6px; 
-            box-shadow: 0 0 10px rgba(59, 130, 246, 0.5);
+            -webkit-appearance: none; height: 16px; width: 16px; border-radius: 50%;
+            background: #3b82f6; cursor: pointer; margin-top: -6px; box-shadow: 0 0 10px rgba(59, 130, 246, 0.5);
         }
-
         input[type=range]::-webkit-slider-runnable-track {
-            width: 100%;
-            height: 4px;
-            cursor: pointer;
-            background: #4b5563;
-            border-radius: 2px;
+            width: 100%; height: 4px; cursor: pointer; background: #4b5563; border-radius: 2px;
         }
 
         /* Guitar Specific Range Color */
@@ -45,65 +30,29 @@
         }
 
         /* Piano Keys */
-        .key {
-            transition: background-color 0.1s ease, transform 0.05s;
-        }
-        .white-key.active {
-            background-color: #3b82f6 !important; /* Blue-500 */
-            box-shadow: 0 0 15px #3b82f6, inset 0 0 10px rgba(0,0,0,0.2);
-            transform: translateY(2px);
-        }
-        .black-key.active {
-            background-color: #3b82f6 !important;
-            box-shadow: 0 0 15px #3b82f6;
-            transform: translateY(2px);
+        .key { transition: all 0.1s ease; cursor: pointer; }
+        .white-key.active { background-color: #3b82f6 !important; transform: translateY(2px); box-shadow: inset 0 0 10px rgba(0,0,0,0.5); }
+        .black-key.active { background-color: #3b82f6 !important; transform: translateY(2px); box-shadow: inset 0 0 10px rgba(0,0,0,0.5); }
+        
+        /* Mapped Indicator */
+        .key.mapped::after {
+            content: ''; position: absolute; bottom: 5px; left: 50%; transform: translateX(-50%);
+            width: 6px; height: 6px; background-color: #eab308; border-radius: 50%;
         }
 
-        .led {
-            width: 8px;
-            height: 8px;
-            border-radius: 50%;
-            background-color: #333;
-            transition: background-color 0.1s;
-            display: inline-block;
-        }
+        .led { width: 8px; height: 8px; border-radius: 50%; background-color: #333; transition: background-color 0.1s; display: inline-block; }
         .led.on { background-color: #22c55e; box-shadow: 0 0 5px #22c55e; }
         .led.signal { background-color: #ef4444; box-shadow: 0 0 5px #ef4444; }
         .led.tx { background-color: #eab308; box-shadow: 0 0 5px #eab308; }
-        .led.learn { background-color: #f59e0b; box-shadow: 0 0 8px #f59e0b; animation: pulse 1s infinite; }
-        
-        @keyframes pulse { 0% { opacity: 0.5; } 50% { opacity: 1; } 100% { opacity: 0.5; } }
 
         /* Toggle Switch */
-        .toggle-checkbox:checked {
-            right: 0;
-            border-color: #eab308;
-        }
-        .toggle-checkbox:checked + .toggle-label {
-            background-color: #eab308;
-        }
+        .toggle-checkbox:checked { right: 0; border-color: #eab308; }
+        .toggle-checkbox:checked + .toggle-label { background-color: #eab308; }
 
         select {
             background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
-            background-position: right 0.5rem center;
-            background-repeat: no-repeat;
-            background-size: 1.5em 1.5em;
-            padding-right: 2.5rem;
-            -webkit-appearance: none;
-            appearance: none;
-        }
-
-        .learn-btn.active {
-            background-color: #ef4444 !important;
-            border-color: #ef4444 !important;
-            color: white !important;
-            animation: pulse 1s infinite;
-        }
-        
-        /* Wood Texture for Steirisch Feel */
-        .wood-panel {
-            background: linear-gradient(135deg, #5d4037 0%, #3e2723 100%);
-            border: 2px solid #8d6e63;
+            background-position: right 0.5rem center; background-repeat: no-repeat; background-size: 1.5em 1.5em;
+            padding-right: 2.5rem; -webkit-appearance: none; appearance: none;
         }
     </style>
 </head>
@@ -111,318 +60,186 @@
 
     <!-- Overlay -->
     <div id="start-overlay" class="fixed inset-0 bg-black/95 z-50 flex items-center justify-center flex-col text-center p-4">
-        <h1 class="text-4xl font-bold mb-2 text-blue-500">MIDI Arranger & Router</h1>
+        <h1 class="text-4xl font-bold mb-2 text-blue-500">MIDI Bass Mapper</h1>
         <p class="mb-8 text-gray-400 max-w-md text-sm">
-            Verbindet deine Bassleiste mit externen Apps (z.B. Turbosounds).<br>
-            Erzeugt automatisch Begleit-Akkorde und sendet sie weiter.
+            Verbinde deine Bassleiste und konfiguriere jede Taste einzeln.<br>
+            Ideal für Steirische Harmonika Setups.
         </p>
         <button id="start-btn" class="px-8 py-3 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-full transition transform hover:scale-105 shadow-lg shadow-blue-500/30">
             System Starten
         </button>
-        
-        <!-- iOS Warning (Hidden by default) -->
         <div id="ios-warning" class="hidden mt-4 bg-red-900/50 border border-red-500 p-4 rounded text-left max-w-xs">
             <h3 class="text-red-400 font-bold text-sm mb-2">⚠️ iPhone/iPad erkannt</h3>
-            <p class="text-xs text-gray-300">
-                Der Safari-Browser unterstützt leider kein MIDI. 
-                <br><br>
-                <b>Lösung:</b> Lade die App <i>"Web MIDI Browser"</i> im AppStore und öffne diese Seite darin.
-            </p>
+            <p class="text-xs text-gray-300">Nutze bitte die App "Web MIDI Browser".</p>
         </div>
     </div>
 
     <div class="w-full max-w-6xl bg-gray-900/80 backdrop-blur rounded-xl border border-gray-800 shadow-2xl overflow-hidden p-4 md:p-6">
         
-        <!-- TOP HEADER: ROUTING CENTER -->
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6 pb-6 border-b border-gray-800">
-            
-            <!-- INPUT SECTION -->
-            <div class="bg-black/40 rounded-lg p-4 border border-gray-800 relative">
-                <div class="absolute top-2 right-2 flex gap-2">
-                    <span class="text-[10px] text-gray-500 uppercase">RX Signal</span>
+        <!-- HEADER -->
+        <div class="flex flex-col md:flex-row justify-between items-center mb-6 border-b border-gray-800 pb-4 gap-4">
+            <!-- INPUT Status -->
+            <div class="flex items-center gap-4 bg-black/40 px-4 py-2 rounded-full border border-gray-800">
+                <div class="flex items-center gap-2">
+                    <span class="text-xs text-gray-500 uppercase font-bold">Input</span>
                     <div id="led-rx" class="led"></div>
                 </div>
-                <h3 class="text-xs font-bold text-blue-400 uppercase tracking-widest mb-3 flex items-center gap-2">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"></path></svg>
-                    MIDI INPUT (Bassleiste)
-                </h3>
-                
-                <div class="grid grid-cols-1 gap-4">
-                    <div>
-                        <label class="block text-xs text-gray-500 mb-1">Eingangsgerät</label>
-                        <select id="midi-in-select" class="w-full bg-gray-800 text-xs text-gray-200 border border-gray-700 rounded px-2 py-2 focus:border-blue-500 outline-none">
-                            <option value="">Suche...</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label class="block text-xs text-gray-500 mb-1">Input Kanal</label>
-                        <select id="midi-in-channel" class="w-full bg-gray-800 text-xs text-gray-200 border border-gray-700 rounded px-2 py-2 focus:border-blue-500 outline-none">
-                            <option value="all">Alle (Omni)</option>
-                            <option value="1">Kanal 1</option>
-                            <option value="2">Kanal 2</option>
-                            <option value="3">Kanal 3</option>
-                            <option value="4">Kanal 4</option>
-                        </select>
-                    </div>
-                </div>
+                <div class="h-4 w-px bg-gray-700"></div>
+                <select id="midi-in-select" class="bg-transparent text-xs text-blue-400 font-bold outline-none w-32">
+                    <option value="">Kein Gerät...</option>
+                </select>
             </div>
 
-            <!-- OUTPUT SECTION -->
-            <div class="bg-black/40 rounded-lg p-4 border border-gray-800 relative">
-                 <div class="absolute top-2 right-2 flex gap-2">
-                    <span class="text-[10px] text-gray-500 uppercase">TX Signal</span>
+            <!-- OUTPUT Status -->
+            <div class="flex items-center gap-4 bg-black/40 px-4 py-2 rounded-full border border-gray-800">
+                <div class="flex items-center gap-2">
+                    <span class="text-xs text-gray-500 uppercase font-bold">Output (App)</span>
                     <div id="led-tx" class="led"></div>
                 </div>
-                <h3 class="text-xs font-bold text-yellow-500 uppercase tracking-widest mb-3 flex items-center gap-2">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"></path></svg>
-                    MIDI OUTPUT (Turbosounds)
-                </h3>
-
-                <div class="grid grid-cols-1 gap-2 mb-3">
-                    <div>
-                        <label class="block text-xs text-gray-500 mb-1">Zielgerät</label>
-                        <select id="midi-out-select" class="w-full bg-gray-800 text-xs text-gray-200 border border-gray-700 rounded px-2 py-2 focus:border-yellow-500 outline-none">
-                            <option value="">Kein Output</option>
-                        </select>
-                    </div>
-                    <div class="grid grid-cols-2 gap-2">
-                        <div>
-                            <label class="block text-xs text-gray-500 mb-1">Bass Kanal</label>
-                            <select id="midi-out-ch-bass" class="w-full bg-gray-800 text-xs text-gray-200 border border-gray-700 rounded px-2 py-2 outline-none">
-                                <option value="1">CH 1</option>
-                                <option value="2">CH 2</option>
-                                <option value="3" selected>CH 3</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label class="block text-xs text-gray-500 mb-1">Gitarren Kanal</label>
-                            <select id="midi-out-ch-guitar" class="w-full bg-gray-800 text-xs text-gray-200 border border-gray-700 rounded px-2 py-2 outline-none">
-                                <option value="1">CH 1</option>
-                                <option value="2" selected>CH 2</option>
-                                <option value="3">CH 3</option>
-                            </select>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Test Button -->
-                <button id="test-midi-btn" class="w-full bg-yellow-600/20 hover:bg-yellow-600/40 text-yellow-500 text-xs py-2 rounded border border-yellow-600/50 transition flex items-center justify-center gap-2">
-                    Test-Ton senden
-                </button>
-            </div>
-
-            <!-- REMOTE CONTROL SECTION -->
-            <div class="bg-black/40 rounded-lg p-4 border border-gray-800 relative">
-                 <h3 class="text-xs font-bold text-green-500 uppercase tracking-widest mb-3 flex items-center gap-2">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"></path></svg>
-                    Fernsteuerung (Buttons)
-                </h3>
-                
-                <div class="space-y-2">
-                    <!-- Mapping 1: Major/Minor -->
-                    <div class="flex items-center justify-between bg-gray-800/50 p-2 rounded border border-gray-700">
-                        <span class="text-xs text-gray-300">Dur / Moll Wechsel</span>
-                        <div class="flex gap-2 items-center">
-                            <span id="map-lbl-majmin" class="text-[10px] text-gray-500 font-mono">-</span>
-                            <button onclick="learnMidi('majmin')" id="btn-learn-majmin" class="learn-btn text-[10px] bg-gray-700 hover:bg-gray-600 text-white px-2 py-1 rounded border border-gray-600 transition">Lernen</button>
-                        </div>
-                    </div>
-                    
-                    <!-- Mapping 2: Guitar Toggle -->
-                    <div class="flex items-center justify-between bg-gray-800/50 p-2 rounded border border-gray-700">
-                        <span class="text-xs text-gray-300">Gitarre An/Aus</span>
-                        <div class="flex gap-2 items-center">
-                            <span id="map-lbl-guitartoggle" class="text-[10px] text-gray-500 font-mono">-</span>
-                            <button onclick="learnMidi('guitartoggle')" id="btn-learn-guitartoggle" class="learn-btn text-[10px] bg-gray-700 hover:bg-gray-600 text-white px-2 py-1 rounded border border-gray-600 transition">Lernen</button>
-                        </div>
-                    </div>
-
-                    <!-- Mapping 3: Preset Next -->
-                     <div class="flex items-center justify-between bg-gray-800/50 p-2 rounded border border-gray-700">
-                        <span class="text-xs text-gray-300">Nächstes Preset</span>
-                        <div class="flex gap-2 items-center">
-                            <span id="map-lbl-nextpreset" class="text-[10px] text-gray-500 font-mono">-</span>
-                            <button onclick="learnMidi('nextpreset')" id="btn-learn-nextpreset" class="learn-btn text-[10px] bg-gray-700 hover:bg-gray-600 text-white px-2 py-1 rounded border border-gray-600 transition">Lernen</button>
-                        </div>
-                    </div>
-                </div>
+                <div class="h-4 w-px bg-gray-700"></div>
+                <select id="midi-out-select" class="bg-transparent text-xs text-yellow-500 font-bold outline-none w-32">
+                    <option value="">Kein Output...</option>
+                </select>
             </div>
         </div>
 
-        <!-- SOUND ENGINE CONTROLS -->
-        <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
             
-            <!-- LEFT PANEL: LOCAL SOUND & VISUALS -->
-            <div class="lg:col-span-3 space-y-4">
-                
-                <!-- Visual Keyboard (Piano Style) -->
-                <div class="relative h-32 bg-black rounded-lg border-t-4 border-gray-800 overflow-hidden shadow-inner select-none" id="keyboard-container">
-                    <!-- Keys generated by JS -->
+            <!-- LEFT: VISUALIZER & SYNTH -->
+            <div class="lg:col-span-2 space-y-6">
+                <!-- Visual Keyboard -->
+                <div class="bg-black rounded-xl border-4 border-gray-800 shadow-inner relative overflow-hidden p-4">
+                    <div class="absolute top-2 left-3 text-[10px] text-gray-600 font-mono tracking-widest pointer-events-none">EINGANGS-MONITOR</div>
+                    <!-- FIXED: items-start aligns black keys to top (back of piano) -->
+                    <div class="relative h-40 select-none flex justify-center items-start pt-6 gap-0.5" id="keyboard-container">
+                        <!-- Keys Generated by JS -->
+                    </div>
                 </div>
 
-                <!-- Local Sound Controls -->
-                <div class="bg-gray-800/50 p-4 rounded-lg border border-gray-700/50">
-                    <div class="flex items-center justify-between mb-4">
-                        <h3 class="text-xs font-bold text-gray-400 uppercase tracking-widest">Lokaler Sound (Browser)</h3>
-                        
-                        <!-- MUTE TOGGLE -->
-                        <div class="flex items-center gap-2">
-                            <span class="text-xs text-gray-400">Ton an</span>
-                            <div class="relative inline-block w-10 align-middle select-none">
-                                <input type="checkbox" id="local-sound-toggle" class="toggle-checkbox absolute block w-5 h-5 rounded-full bg-white border-4 appearance-none cursor-pointer" style="top:0; left:0; transition: all 0.3s;" checked/>
-                                <label for="local-sound-toggle" class="block overflow-hidden h-5 rounded-full bg-gray-600 cursor-pointer"></label>
-                            </div>
+                <!-- Synth Controls (Compact) -->
+                <div class="bg-gray-800/30 p-4 rounded-lg border border-gray-700/50 flex flex-wrap gap-4 items-center justify-between">
+                    <div>
+                        <label class="text-[10px] text-gray-500 block uppercase tracking-wider mb-1">Sound</label>
+                        <select id="preset-select" class="bg-gray-900 text-xs text-gray-200 border border-gray-600 rounded px-2 py-1">
+                            <option value="ebass">E-Bass (Real)</option>
+                            <option value="helikon">Helikon</option>
+                            <option value="synth">Synth</option>
+                        </select>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <span class="text-xs text-gray-400">Lokal Sound</span>
+                        <div class="relative inline-block w-8 align-middle select-none">
+                            <input type="checkbox" id="local-sound-toggle" class="toggle-checkbox absolute block w-4 h-4 rounded-full bg-white border-4 appearance-none cursor-pointer" style="top:0; left:0; transition: all 0.3s;" checked/>
+                            <label for="local-sound-toggle" class="block overflow-hidden h-4 rounded-full bg-gray-600 cursor-pointer"></label>
                         </div>
                     </div>
-
-                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 opacity-100 transition-opacity" id="local-controls">
-                        <!-- Preset -->
-                        <div>
-                             <label class="text-xs text-gray-500 block mb-1">Preset</label>
-                             <select id="preset-select" class="w-full bg-gray-900 text-xs text-blue-400 font-bold border border-gray-700 rounded px-2 py-1">
-                                <option value="helikon">Helikon (Steirisch)</option>
-                                <option value="ebass">E-Bass</option>
-                                <option value="baritone">Bariton</option>
-                                <option value="synth">Synth</option>
-                                <option value="sub808">Sub 808</option>
-                            </select>
-                        </div>
-                        <!-- Filter -->
-                        <div>
-                            <label class="text-xs text-gray-500 block mb-1">Filter</label>
-                            <input type="range" id="filter-cutoff" min="50" max="5000" value="800" class="w-full h-1 bg-gray-600 rounded-lg appearance-none cursor-pointer">
-                        </div>
-                        <!-- Attack -->
-                        <div>
-                            <label class="text-xs text-gray-500 block mb-1">Attack</label>
-                            <input type="range" id="env-attack" min="0.001" max="0.2" step="0.001" value="0.01" class="w-full h-1 bg-gray-600 rounded-lg appearance-none cursor-pointer">
-                        </div>
-                        <!-- Release -->
-                        <div>
-                            <label class="text-xs text-gray-500 block mb-1">Release</label>
-                            <input type="range" id="env-release" min="0.1" max="2" step="0.1" value="0.3" class="w-full h-1 bg-gray-600 rounded-lg appearance-none cursor-pointer">
-                        </div>
+                    <!-- MIDI Channels -->
+                    <div class="flex gap-2 text-xs text-gray-500">
+                        <span>Bass Ch: <input type="number" id="ch-bass" value="3" class="w-8 bg-gray-900 text-center rounded border border-gray-700"></span>
+                        <span>Guit Ch: <input type="number" id="ch-guit" value="2" class="w-8 bg-gray-900 text-center rounded border border-gray-700"></span>
                     </div>
                 </div>
             </div>
 
-            <!-- RIGHT PANEL: GUITAR LOGIC -->
-            <div class="lg:col-span-1 wood-panel p-4 rounded-lg relative flex flex-col justify-between">
-                <div>
-                    <h3 class="text-xs font-bold text-yellow-100 uppercase tracking-widest border-b border-yellow-800/50 pb-2 mb-4">Volksmusik Begleitung</h3>
-                    
-                    <div class="space-y-6">
-                        <!-- Enable Toggle -->
-                        <div class="flex items-center justify-between">
-                            <span class="text-sm text-yellow-100 font-medium">Begleitung An</span>
-                            <div class="relative inline-block w-10 mr-2 align-middle select-none">
-                                <input type="checkbox" id="guitar-toggle" class="toggle-checkbox absolute block w-5 h-5 rounded-full bg-white border-4 appearance-none cursor-pointer" style="top:0; left:0; transition: all 0.3s;" checked/>
-                                <label for="guitar-toggle" class="block overflow-hidden h-5 rounded-full bg-gray-700 cursor-pointer"></label>
-                            </div>
-                        </div>
-
-                         <!-- SMART HARMONY TOGGLE -->
-                         <div class="flex items-center justify-between bg-black/20 p-2 rounded">
-                            <div>
-                                <span class="text-xs text-yellow-100 font-bold block">Smart Akkorde</span>
-                                <span class="text-[10px] text-yellow-200/70">Autom. Dur/Moll</span>
-                            </div>
-                            <div class="relative inline-block w-10 mr-2 align-middle select-none">
-                                <input type="checkbox" id="smart-harmony-toggle" class="toggle-checkbox absolute block w-5 h-5 rounded-full bg-white border-4 appearance-none cursor-pointer" style="top:0; left:0; transition: all 0.3s;" checked/>
-                                <label for="smart-harmony-toggle" class="block overflow-hidden h-5 rounded-full bg-gray-700 cursor-pointer"></label>
-                            </div>
-                        </div>
-
-                        <!-- CUSTOM REMAP TOGGLE -->
-                         <div class="flex items-center justify-between bg-black/20 p-2 rounded border border-yellow-800/30">
-                            <div>
-                                <span class="text-xs text-yellow-400 font-bold block">Wechselbass C-Dur</span>
-                                <span class="text-[10px] text-yellow-200/70">Taste C=C, Taste D=G</span>
-                            </div>
-                            <div class="relative inline-block w-10 mr-2 align-middle select-none">
-                                <input type="checkbox" id="custom-remap-toggle" class="toggle-checkbox absolute block w-5 h-5 rounded-full bg-white border-4 appearance-none cursor-pointer" style="top:0; left:0; transition: all 0.3s;"/>
-                                <label for="custom-remap-toggle" class="block overflow-hidden h-5 rounded-full bg-gray-700 cursor-pointer"></label>
-                            </div>
-                        </div>
-
-                        <!-- Chord Type Buttons -->
-                        <div>
-                            <label class="text-xs text-yellow-200/70 mb-2 block">Manueller Modus</label>
-                            <div class="flex bg-black/40 rounded p-1 border border-yellow-900/50">
-                                <button id="btn-major" class="flex-1 py-2 text-xs font-bold rounded bg-yellow-600 text-white transition-all">DUR</button>
-                                <button id="btn-minor" class="flex-1 py-2 text-xs font-bold rounded text-gray-400 hover:text-white transition-all">MOLL</button>
-                            </div>
-                        </div>
-
-                        <!-- Strumming (Also affects MIDI) -->
-                        <div>
-                            <label class="flex justify-between text-xs text-yellow-200/70 mb-1">
-                                <span>Schlag-Tempo (Zackig)</span>
-                            </label>
-                            <input type="range" id="guitar-strum" min="0.01" max="0.12" step="0.01" value="0.03" class="w-full guitar-range">
-                        </div>
-                    </div>
+            <!-- RIGHT: MAPPING EDITOR -->
+            <div class="lg:col-span-1 bg-gray-800 rounded-xl border border-gray-700 p-0 overflow-hidden flex flex-col h-full">
+                <div class="bg-gradient-to-r from-gray-900 to-gray-800 p-4 border-b border-gray-700 flex justify-between items-center">
+                    <h2 class="font-bold text-white flex items-center gap-2">
+                        <svg class="w-5 h-5 text-yellow-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                        Mapping Editor
+                    </h2>
+                    <span id="editor-status" class="text-[10px] text-gray-500 uppercase bg-gray-900 px-2 py-1 rounded">Bereit</span>
                 </div>
 
-                <div class="mt-4 p-2 bg-black/50 text-[10px] text-gray-500 font-mono rounded border border-gray-800 h-24 overflow-y-auto" id="console-log">
-                    > System bereit...<br>
-                    > Modus: Steirisch
+                <div class="p-6 flex-1 flex flex-col gap-6" id="editor-content">
+                    
+                    <!-- Selected Key Display -->
+                    <div class="text-center pb-4 border-b border-gray-700">
+                        <div class="text-xs text-gray-500 uppercase tracking-widest mb-1">Gewählte Taste (Input)</div>
+                        <div class="text-4xl font-black text-white" id="selected-note-display">-</div>
+                        <div class="text-xs text-gray-600 font-mono mt-1" id="selected-note-midi">MIDI: -</div>
+                    </div>
+
+                    <!-- Config Form -->
+                    <div class="space-y-4 opacity-50 pointer-events-none transition-opacity" id="mapping-controls">
+                        
+                        <!-- Bass Output -->
+                        <div>
+                            <label class="flex justify-between text-xs text-blue-400 font-bold mb-1">
+                                <span>1. SPIELE BASS TON</span>
+                            </label>
+                            <select id="map-bass-note" class="w-full bg-gray-900 text-sm text-white border border-gray-600 rounded px-3 py-2 outline-none focus:border-blue-500">
+                                <!-- Populated by JS -->
+                            </select>
+                        </div>
+
+                        <!-- Chord Output -->
+                        <div>
+                            <label class="flex justify-between text-xs text-yellow-500 font-bold mb-1">
+                                <span>2. SENDE AKKORD (Gitarre)</span>
+                            </label>
+                            <div class="grid grid-cols-3 gap-2">
+                                <div class="col-span-2">
+                                    <select id="map-chord-root" class="w-full bg-gray-900 text-sm text-white border border-gray-600 rounded px-3 py-2 outline-none focus:border-yellow-500">
+                                        <!-- Populated by JS -->
+                                    </select>
+                                </div>
+                                <div>
+                                    <select id="map-chord-type" class="w-full bg-gray-900 text-sm text-white border border-gray-600 rounded px-3 py-2 outline-none focus:border-yellow-500">
+                                        <option value="maj">Dur</option>
+                                        <option value="min">Moll</option>
+                                        <option value="7">7</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="text-[10px] text-gray-500 mt-1 italic" id="chord-info-text">
+                                Sendet Grundton und Terz/Quinte auf Kanal 2
+                            </div>
+                        </div>
+
+                        <!-- Reset -->
+                        <div class="pt-2 text-center">
+                            <button id="btn-reset-map" class="text-xs text-red-400 hover:text-red-300 underline">Standard wiederherstellen</button>
+                        </div>
+                    </div>
+
+                    <div class="mt-auto bg-blue-900/20 p-3 rounded border border-blue-800/30 text-xs text-blue-200">
+                        ℹ️ Drücke eine Taste auf deiner Leiste, um sie zu konfigurieren. C-Dur ist meistens C3 [48] oder C2 [36].
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 
     <script>
-        // --- GLOBALS & STATE ---
+        // --- GLOBALS ---
         let audioCtx;
         let masterGain;
         let midiAccess = null;
-        let activeInput = null;
         let activeOutput = null;
-        
-        // Active Notes Tracking
-        let activeVoices = {}; // Local Audio Voices
-        
-        // Tracking the STATE of notes to ensure NoteOff matches NoteOn mapping
-        // Key: InputNote (MIDI)
-        // Value: { bassNote: number, chordRoot: number }
+        let activeVoices = {}; // Local Audio
         let activeNoteState = {}; 
+
+        // USER CONFIG & MAPPINGS
+        // Mappings: { midiNote: { bass: int, chordRoot: int, chordType: 'maj'/'min' } }
+        let customMappings = {};
+        let selectedNote = null; // Currently being edited
 
         let config = {
             localSound: true,
-            guitarEnabled: true,
-            isMajor: true,
-            smartHarmony: true, // Auto Dur/Moll
-            customRemap: false, // Special G-Wechsel mapping
-            strumSpeed: 0.03,   // Faster for Polka
-            inputChannel: 'all', // 'all' or 1-16
-            outputChannelBass: 3,
-            outputChannelGuitar: 2,
-            
-            // Local Synth Params (Default Helikon)
-            waveType: 'sawtooth',
-            cutoff: 1200,
-            attack: 0.01,
-            release: 0.2
+            bassCh: 3,
+            guitCh: 2,
+            strumSpeed: 0.03,
+            // Synth
+            model: 'string', 
+            cutoff: 2000, 
+            attack: 0.01, 
+            release: 0.3 
         };
 
-        // MIDI MAPPING STATE
-        let midiLearnTarget = null;
-        let midiMappings = {
-            'majmin': null,     // { type: 'cc'/'pc', val: 10 }
-            'guitartoggle': null,
-            'nextpreset': null
-        };
+        const notesList = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
 
-        const presets = {
-            'helikon': { wave: 'sawtooth', cutoff: 1200, att: 0.01, rel: 0.2 },
-            'ebass': { wave: 'sawtooth', cutoff: 1500, att: 0.01, rel: 0.4 },
-            'baritone': { wave: 'square', cutoff: 2200, att: 0.01, rel: 0.6 },
-            'synth': { wave: 'sawtooth', cutoff: 800, att: 0.01, rel: 0.2 },
-            'sub808': { wave: 'sine', cutoff: 300, att: 0.05, rel: 1.2 }
-        };
-
-        // --- AUDIO ENGINE (LOCAL) ---
+        // --- INIT ---
         function initAudio() {
             if (audioCtx) return;
             const AudioContext = window.AudioContext || window.webkitAudioContext;
@@ -430,74 +247,75 @@
             masterGain = audioCtx.createGain();
             masterGain.gain.value = 0.4;
             
-            // Compressor
             const comp = audioCtx.createDynamicsCompressor();
             masterGain.connect(comp);
             comp.connect(audioCtx.destination);
             
             document.getElementById('start-overlay').classList.add('hidden');
-            log("Audio Engine gestartet.");
             
-            // Check for iOS
             const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
-
-            // Init MIDI
             if (navigator.requestMIDIAccess) {
                 navigator.requestMIDIAccess({ sysex: false }).then(onMIDISuccess, onMIDIFailure);
-            } else {
-                if(isIOS) {
-                    document.getElementById('ios-warning').classList.remove('hidden');
-                    log("Fehler: iOS Safari blockiert MIDI. Nutze 'Web MIDI Browser'.");
-                } else {
-                    log("Fehler: Web MIDI nicht unterstützt. Nutze Chrome/Edge.");
-                }
+            } else if(isIOS) {
+                document.getElementById('ios-warning').classList.remove('hidden');
             }
+            
+            initMappingUI();
         }
 
+        // --- SYNTH ENGINE (Optimized E-Bass) ---
         class Voice {
             constructor(note, velocity) {
                 if(!config.localSound) return;
-
                 this.ctx = audioCtx;
-                this.osc = this.ctx.createOscillator();
-                this.sub = this.ctx.createOscillator();
                 this.gain = this.ctx.createGain();
                 this.filter = this.ctx.createBiquadFilter();
-
+                const now = this.ctx.currentTime;
                 const freq = 440 * Math.pow(2, (note - 69) / 12);
-                this.osc.frequency.value = freq;
-                this.osc.type = config.waveType;
+                this.oscs = [];
+
+                // E-Bass Model (String + Body)
+                const osc1 = this.ctx.createOscillator();
+                osc1.type = 'triangle'; // Body
+                osc1.frequency.value = freq;
                 
-                // Helikon Sub logic (Sawtooth sub for buzz)
-                this.sub.frequency.value = freq / 2;
-                this.sub.type = config.waveType === 'sawtooth' ? 'sawtooth' : 'sine'; 
+                const osc2 = this.ctx.createOscillator();
+                osc2.type = 'sawtooth'; // String buzz
+                osc2.frequency.value = freq;
+                
+                const osc2Gain = this.ctx.createGain();
+                osc2Gain.gain.setValueAtTime(0.5, now);
+                osc2Gain.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
 
                 this.filter.type = 'lowpass';
-                this.filter.frequency.value = config.cutoff;
-                this.filter.Q.value = 1; // Little resonance for Helikon
+                this.filter.frequency.setValueAtTime(config.cutoff, now);
+                this.filter.frequency.exponentialRampToValueAtTime(300, now + 0.2); 
+                this.filter.Q.value = 1.0;
 
-                this.osc.connect(this.filter);
+                // Click
+                const buf = this.ctx.createBuffer(1, this.ctx.sampleRate * 0.01, this.ctx.sampleRate);
+                const d = buf.getChannelData(0);
+                for(let i=0; i<d.length; i++) d[i] = Math.random()*2-1;
+                const click = this.ctx.createBufferSource();
+                click.buffer = buf;
+                const clickG = this.ctx.createGain();
+                clickG.gain.value = 0.2;
+
+                osc1.connect(this.filter);
+                osc2.connect(osc2Gain);
+                osc2Gain.connect(this.filter);
+                click.connect(clickG);
+                clickG.connect(this.gain);
                 this.filter.connect(this.gain);
-                
-                // Sub Mix
-                const subGainNode = this.ctx.createGain();
-                subGainNode.gain.value = 0.6;
-                this.sub.connect(subGainNode);
-                subGainNode.connect(this.gain);
-                
                 this.gain.connect(masterGain);
 
-                const now = this.ctx.currentTime;
-                this.osc.start(now);
-                this.sub.start(now);
+                osc1.start(now);
+                osc2.start(now);
+                click.start(now);
+                this.oscs.push(osc1, osc2, click);
 
-                // Envelope
                 this.gain.gain.setValueAtTime(0, now);
-                this.gain.gain.linearRampToValueAtTime(velocity/127, now + config.attack);
-                
-                // Filter Env (Snappy for Polka)
-                this.filter.frequency.setValueAtTime(config.cutoff/2, now);
-                this.filter.frequency.exponentialRampToValueAtTime(config.cutoff, now + config.attack);
+                this.gain.gain.linearRampToValueAtTime(velocity/127, now + 0.01);
             }
 
             stop() {
@@ -506,413 +324,256 @@
                 this.gain.gain.cancelScheduledValues(now);
                 this.gain.gain.setValueAtTime(this.gain.gain.value, now);
                 this.gain.gain.exponentialRampToValueAtTime(0.001, now + config.release);
-                this.osc.stop(now + config.release + 0.1);
-                this.sub.stop(now + config.release + 0.1);
+                const stopT = now + config.release + 0.1;
+                this.oscs.forEach(o => { try{o.stop(stopT)}catch(e){} });
+                setTimeout(() => this.gain.disconnect(), (config.release*1000)+200);
             }
         }
 
-        // --- CORE LOGIC (HANDLES BOTH AUDIO & MIDI OUT) ---
+        // --- MAPPING LOGIC ---
 
-        function getRemappedNotes(inputNote) {
-            let bassNote = inputNote;
-            let chordRoot = inputNote;
-            let remapped = false;
+        function getNoteName(val) {
+            const oct = Math.floor(val / 12) - 1;
+            return notesList[val % 12] + oct;
+        }
 
-            // SPECIAL REMAP FOR C-Wechsel (User request: C->C, D->G Bass, Chord C for both)
-            if (config.customRemap) {
-                const noteMod = inputNote % 12;
-                // If Note is C (0) -> Bass C, Chord C
-                if (noteMod === 0) { 
-                    bassNote = inputNote;
-                    chordRoot = inputNote; // C Major
-                    remapped = true;
-                }
-                // If Note is D (2) -> Bass G (7) [Remap D to G], Chord C
-                else if (noteMod === 2) {
-                    bassNote = inputNote + 5; // D + 5 semitones = G
-                    // We need Chord C. Input is D. C is D-2.
-                    chordRoot = inputNote - 2; 
-                    remapped = true;
-                }
+        function selectNoteForEditing(note) {
+            selectedNote = note;
+            
+            // Visuals
+            document.querySelectorAll('.key').forEach(k => k.classList.remove('border-blue-500', 'border-2'));
+            const k = document.querySelector(`.key[data-note="${note}"]`);
+            if(k) k.classList.add('border-blue-500', 'border-2');
+
+            // UI Update
+            document.getElementById('selected-note-display').innerText = getNoteName(note);
+            document.getElementById('selected-note-midi').innerText = `MIDI Note: ${note}`;
+            document.getElementById('editor-status').innerText = "Bearbeitung...";
+            document.getElementById('editor-status').classList.add('text-blue-400');
+            document.getElementById('mapping-controls').classList.remove('opacity-50', 'pointer-events-none');
+
+            // Load Existing Mapping or Default
+            const map = customMappings[note];
+            if(map) {
+                document.getElementById('map-bass-note').value = map.bass;
+                document.getElementById('map-chord-root').value = map.chordRoot;
+                document.getElementById('map-chord-type').value = map.chordType;
+            } else {
+                // Default: Bass = Input, Chord = Input Major
+                document.getElementById('map-bass-note').value = note;
+                document.getElementById('map-chord-root').value = note; 
+                document.getElementById('map-chord-type').value = 'maj';
             }
-            return { bassNote, chordRoot, remapped };
         }
 
-        function getNoteName(midiVal) {
-            const notes = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
-            return notes[midiVal % 12];
+        function saveCurrentMapping() {
+            if(selectedNote === null) return;
+            const bass = parseInt(document.getElementById('map-bass-note').value);
+            const root = parseInt(document.getElementById('map-chord-root').value);
+            const type = document.getElementById('map-chord-type').value;
+
+            customMappings[selectedNote] = {
+                bass: bass,
+                chordRoot: root,
+                chordType: type
+            };
+            
+            // Visual feedback on key
+            const k = document.querySelector(`.key[data-note="${selectedNote}"]`);
+            if(k) k.classList.add('mapped');
+            
+            // Update info text
+            const rootName = getNoteName(root);
+            document.getElementById('chord-info-text').innerText = `Spielt ${rootName}-${type.toUpperCase()} Akkord (MIDI Root: ${root})`;
         }
+
+        // --- NOTE LOGIC ---
 
         function noteOn(note, velocity) {
-            // Apply Remap Logic based on current settings
-            const { bassNote, chordRoot, remapped } = getRemappedNotes(note);
-            
-            // Store the state so we stop the correct notes later
-            activeNoteState[note] = { bassNote, chordRoot };
+            // 1. Select for UI Editing
+            selectNoteForEditing(note);
 
-            if(remapped) {
-                log(`Mapping: ${getNoteName(note)} -> Bass ${getNoteName(bassNote)} | Chd ${getNoteName(chordRoot)}`);
+            // 2. Determine Output based on Mapping
+            let bassOut = note;
+            let chordRoot = note; 
+            let chordType = 'maj';
+
+            if(customMappings[note]) {
+                bassOut = customMappings[note].bass;
+                chordRoot = customMappings[note].chordRoot;
+                chordType = customMappings[note].chordType;
+            } else {
+                // Auto Logic if no mapping
+                chordRoot = note + 12;
             }
 
-            // 1. Local Audio (Bass)
-            // Use remapped Bass Note
-            if (activeVoices[note]) activeVoices[note].stop(); // Stop original key voice if exists
-            activeVoices[note] = new Voice(bassNote, velocity);
+            // Save state for NoteOff
+            activeNoteState[note] = { bass: bassOut, root: chordRoot, type: chordType };
 
-            // 2. MIDI Out (Bass)
-            sendMidiNote(config.outputChannelBass, bassNote, velocity, 0);
+            // 3. Play/Send Bass
+            if(activeVoices[note]) activeVoices[note].stop();
+            activeVoices[note] = new Voice(bassOut, velocity); 
+            sendMidiNote(config.bassCh, bassOut, velocity);
 
-            // 3. Guitar Logic (Chord Generation)
-            if (config.guitarEnabled) {
-                // Determine Major/Minor based on Smart Logic
-                if (config.smartHarmony && !config.customRemap) {
-                    determineSmartKey(note);
-                } else if (config.customRemap) {
-                    // Force Major for this specific Remap (G-Dur Wechsel)
-                    config.isMajor = true;
-                    updateChordUI();
-                }
-                
-                // Pass trigger note for tracking, BUT calculate chords based on chordRoot
-                playGuitarChord(chordRoot, velocity, note); 
-            }
+            // 4. Send Chord
+            playChord(chordRoot, chordType, velocity, note);
 
             // Visuals
             highlightKey(note, true);
             uiSignal('rx');
         }
 
-        function determineSmartKey(note) {
-            // Logic for Volksmusik (C-F-G-D-Bb-Eb = Major / A-E-H = Minor)
-            const n = note % 12;
-            if ([9, 4, 11, 6].includes(n)) {
-                config.isMajor = false;
-            } else {
-                config.isMajor = true;
-            }
-            updateChordUI();
-        }
-
         function noteOff(note) {
-            // Retrieve the state that was used when noteOn occurred
-            // This prevents stuck notes if settings changed while key held
             const state = activeNoteState[note];
+            if(!state) return; 
+
+            // Stop Local
+            if(activeVoices[note]) { activeVoices[note].stop(); delete activeVoices[note]; }
             
-            if (!state) {
-                // Fallback if no state found (unlikely)
-                const fallback = getRemappedNotes(note);
-                stopEverything(note, fallback.bassNote);
-                return;
-            }
+            // Stop MIDI Bass
+            sendMidiNote(config.bassCh, state.bass, 0);
+            
+            // Stop Chord
+            stopChord(state.root, state.type, note);
 
-            stopEverything(note, state.bassNote);
             delete activeNoteState[note];
+            highlightKey(note, false);
         }
 
-        function stopEverything(triggerNote, bassNoteToStop) {
-            // 1. Local Audio
-            if (activeVoices[triggerNote]) {
-                activeVoices[triggerNote].stop();
-                delete activeVoices[triggerNote];
-            }
+        // --- CHORD GENERATION ---
+        let activeChords = {}; // note -> [midi notes]
 
-            // 2. MIDI Out (Bass)
-            sendMidiNote(config.outputChannelBass, bassNoteToStop, 0, 0);
+        function playChord(root, type, velocity, triggerNote) {
+            let intervals = [0, 4, 7]; // Maj
+            if(type === 'min') intervals = [0, 3, 7];
+            if(type === '7') intervals = [0, 4, 7, 10];
 
-            // 3. Guitar Logic (Stop Chord)
-            stopGuitarChord(triggerNote); // Use trigger note to find active chord
+            const notes = intervals.map(i => root + i);
+            activeChords[triggerNote] = notes;
 
-            // Visuals
-            highlightKey(triggerNote, false);
-        }
-
-        // --- GUITAR CHORD LOGIC ---
-        // Maps a TRIGGER note to a set of chord notes
-        let activeChordNotes = {}; // Key: TriggerNote, Value: [Array of playing MIDI notes]
-
-        function playGuitarChord(rootNote, velocity, triggerNote) {
-            // Calculate intervals
-            // Root + 12 (Octave) + Intervals
-            const intervals = config.isMajor ? [12, 16, 19, 24] : [12, 15, 19, 24]; // Major vs Minor
-            const chordNotes = intervals.map(i => rootNote + i);
-
-            activeChordNotes[triggerNote] = chordNotes; // Track by trigger note
-
-            // Strumming effect for MIDI
-            chordNotes.forEach((noteVal, index) => {
-                const delay = index * (config.strumSpeed * 1000); // ms
-                
-                // Send MIDI Out
+            // Strum
+            notes.forEach((n, i) => {
                 setTimeout(() => {
-                    // Only play if the trigger note is still held
-                    if(activeChordNotes[triggerNote]) {
-                        // Slightly lower velocity for chord than bass (80%)
-                        sendMidiNote(config.outputChannelGuitar, noteVal, Math.floor(velocity * 0.8), 0);
-                        
-                        // Local Audio Guitar
-                        if(config.localSound) playLocalPluck(noteVal, delay/1000);
+                    if(activeChords[triggerNote]) {
+                        sendMidiNote(config.guitCh, n, Math.floor(velocity*0.8));
                     }
-                }, delay);
+                }, i * (config.strumSpeed * 1000));
             });
         }
 
-        function stopGuitarChord(triggerNote) {
-            const notes = activeChordNotes[triggerNote];
-            if (notes) {
-                notes.forEach(n => {
-                    sendMidiNote(config.outputChannelGuitar, n, 0, 0);
-                });
-                delete activeChordNotes[triggerNote];
+        function stopChord(root, type, triggerNote) {
+            const notes = activeChords[triggerNote];
+            if(notes) {
+                notes.forEach(n => sendMidiNote(config.guitCh, n, 0));
+                delete activeChords[triggerNote];
             }
         }
 
-        function playLocalPluck(note, delayObj) {
-            // Minimal synth for guitar pluck visual/audio feedback locally
-            if(!audioCtx) return;
-            const osc = audioCtx.createOscillator();
-            const g = audioCtx.createGain();
-            osc.type = 'triangle'; // Triangle is smoother for guitar
-            osc.frequency.value = 440 * Math.pow(2, (note - 69) / 12);
-            osc.connect(g);
-            g.connect(masterGain);
-            
-            const now = audioCtx.currentTime + (delayObj || 0);
-            osc.start(now);
-            g.gain.setValueAtTime(0, now);
-            g.gain.linearRampToValueAtTime(0.15, now + 0.005); // Faster attack
-            g.gain.exponentialRampToValueAtTime(0.001, now + 0.2); // Short decay (Staccato)
-            osc.stop(now + 0.25);
-        }
-
-        // --- MIDI SYSTEM ---
-
+        // --- MIDI I/O ---
         function onMIDISuccess(access) {
             midiAccess = access;
             updateDeviceLists();
             midiAccess.onstatechange = updateDeviceLists;
-            log("MIDI Geräte gescannt.");
         }
-
-        function onMIDIFailure() { log("MIDI Fehler."); }
+        function onMIDIFailure() {}
 
         function updateDeviceLists() {
-            // Inputs
             const inSelect = document.getElementById('midi-in-select');
-            const savedIn = inSelect.value;
-            inSelect.innerHTML = '<option value="">-- Keine --</option>';
-            
-            for (let input of midiAccess.inputs.values()) {
+            inSelect.innerHTML = '<option value="">Kein Gerät...</option>';
+            midiAccess.inputs.forEach(i => {
                 const opt = document.createElement('option');
-                opt.value = input.id;
-                opt.text = input.name;
+                opt.value = i.id; opt.text = i.name;
                 inSelect.appendChild(opt);
-            }
-            if(savedIn) inSelect.value = savedIn;
+                i.onmidimessage = handleMIDIMessage; // Auto bind
+            });
 
-            // Outputs
             const outSelect = document.getElementById('midi-out-select');
-            const savedOut = outSelect.value;
-            outSelect.innerHTML = '<option value="">-- Kein Output --</option>';
-            
-            for (let output of midiAccess.outputs.values()) {
+            outSelect.innerHTML = '<option value="">Kein Output...</option>';
+            midiAccess.outputs.forEach(o => {
                 const opt = document.createElement('option');
-                opt.value = output.id;
-                opt.text = output.name;
+                opt.value = o.id; opt.text = o.name;
                 outSelect.appendChild(opt);
-            }
-            if(savedOut) outSelect.value = savedOut;
+            });
         }
 
-        // Input Handling
-        document.getElementById('midi-in-select').addEventListener('change', (e) => {
-            // Remove old listeners
-            midiAccess.inputs.forEach(i => i.onmidimessage = null);
-            
-            if (e.target.value) {
-                const input = midiAccess.inputs.get(e.target.value);
-                input.onmidimessage = handleMIDIMessage;
-                activeInput = input;
-                log(`Input: ${input.name}`);
-            }
-        });
-
-        // Output Handling
         document.getElementById('midi-out-select').addEventListener('change', (e) => {
             activeOutput = e.target.value ? midiAccess.outputs.get(e.target.value) : null;
-            if(activeOutput) log(`Output Router: ${activeOutput.name}`);
         });
-
-        // Test Output
-        document.getElementById('test-midi-btn').addEventListener('click', () => {
-            if(!activeOutput) {
-                log("Fehler: Kein Zielgerät gewählt.");
-                return;
-            }
-            log("Sende Test-Note (C3) an " + activeOutput.name);
-            // Send Note On (CH 3 - default bass)
-            sendMidiNote(config.outputChannelBass, 60, 100, 0); 
-            // Note Off after 500ms
-            setTimeout(() => sendMidiNote(config.outputChannelBass, 60, 0, 0), 500);
-        });
-
-        // --- MIDI LEARN LOGIC ---
-        window.learnMidi = function(target) {
-            if(midiLearnTarget === target) {
-                // Cancel
-                midiLearnTarget = null;
-                document.querySelectorAll('.learn-btn').forEach(b => b.classList.remove('active'));
-                log("Lern-Modus abgebrochen.");
-            } else {
-                midiLearnTarget = target;
-                document.querySelectorAll('.learn-btn').forEach(b => b.classList.remove('active'));
-                document.getElementById(`btn-learn-${target}`).classList.add('active');
-                log("Drücke jetzt einen Knopf am Pedal...");
-            }
-        };
-
-        function checkMapping(type, val) {
-            for (const [key, mapping] of Object.entries(midiMappings)) {
-                if(mapping && mapping.type === type && mapping.val === val) {
-                    executeFunction(key);
-                    return true;
-                }
-            }
-            return false;
-        }
-
-        function executeFunction(key) {
-            log(`Trigger: ${key}`);
-            if(key === 'majmin') {
-                config.isMajor = !config.isMajor;
-                updateChordUI();
-            } else if (key === 'guitartoggle') {
-                config.guitarEnabled = !config.guitarEnabled;
-                document.getElementById('guitar-toggle').checked = config.guitarEnabled;
-            } else if (key === 'nextpreset') {
-                const keys = Object.keys(presets);
-                const currentEl = document.getElementById('preset-select');
-                let idx = keys.indexOf(currentEl.value);
-                idx = (idx + 1) % keys.length;
-                currentEl.value = keys[idx];
-                currentEl.dispatchEvent(new Event('change'));
-            }
-        }
 
         function handleMIDIMessage(msg) {
-            const status = msg.data[0];
-            const data1 = msg.data[1];
-            const data2 = (msg.data.length > 2) ? msg.data[2] : 0;
-
-            const command = status >> 4;
-            const channel = (status & 0xf) + 1;
-
-            // Channel Filter
-            if (config.inputChannel !== 'all' && parseInt(config.inputChannel) !== channel) return;
-
-            // 1. Handle Notes (Audio/Routing)
-            if (command === 9) { // Note On
-                if (data2 > 0) noteOn(data1, data2);
-                else noteOff(data1);
-                return; // Notes shouldn't trigger CC mappings usually
-            } else if (command === 8) { // Note Off
-                noteOff(data1);
-                return;
-            }
-
-            // 2. Handle CC (0xB) and PC (0xC) for Mapping
-            let msgType = null;
-            if (command === 0xB) msgType = 'cc'; // Control Change
-            if (command === 0xC) msgType = 'pc'; // Program Change
-
-            if (msgType) {
-                // LEARN MODE ACTIVE?
-                if (midiLearnTarget) {
-                    midiMappings[midiLearnTarget] = { type: msgType, val: data1 };
-                    
-                    document.getElementById(`map-lbl-${midiLearnTarget}`).innerText = `${msgType.toUpperCase()} #${data1}`;
-                    document.getElementById(`btn-learn-${midiLearnTarget}`).classList.remove('active');
-                    log(`Zugewiesen: ${msgType.toUpperCase()} ${data1} -> ${midiLearnTarget}`);
-                    midiLearnTarget = null;
-                    return;
-                }
-
-                // CHECK EXISTING MAPPINGS
-                checkMapping(msgType, data1);
-            }
+            const cmd = msg.data[0] >> 4;
+            const note = msg.data[1];
+            const vel = (msg.data.length > 2) ? msg.data[2] : 0;
+            if(cmd === 9 && vel > 0) noteOn(note, vel);
+            else if(cmd === 8 || (cmd === 9 && vel === 0)) noteOff(note);
         }
 
-        function sendMidiNote(channel, note, velocity, delay) {
-            if (!activeOutput) return;
+        function sendMidiNote(ch, note, vel) {
+            if(!activeOutput) return;
+            const stat = (vel > 0 ? 0x90 : 0x80) + (ch-1);
+            try { 
+                activeOutput.send([stat, note, vel]); 
+                if(vel > 0) uiSignal('tx');
+            } catch(e){}
+        }
 
-            const status = 0x90 + (channel - 1); // Note On channel
-            // Note: For NoteOff, we usually send NoteOn with Velocity 0 or 0x80 status. 
-            // Here we use velocity to determine (0 = off).
+        // --- UI ---
+        function initMappingUI() {
+            // Populate Selects with Notes
+            const bassSel = document.getElementById('map-bass-note');
+            const chordSel = document.getElementById('map-chord-root');
             
-            // Native MIDI bytes usually: [status, note, velocity]
-            // We wrap in try/catch because sometimes devices disconnect
-            try {
-                uiSignal('tx');
-                if (velocity === 0) {
-                     activeOutput.send([0x80 + (channel - 1), note, 0]); // Actual Note Off
-                } else {
-                     activeOutput.send([status, note, velocity]);
-                }
-            } catch (e) {
-                console.error(e);
+            // Generate options from C1 (24) to C5 (72)
+            for(let i=24; i<=72; i++) {
+                const name = getNoteName(i);
+                // Display text includes MIDI number for reference
+                const displayText = `${name} [${i}]`;
+                const opt1 = new Option(displayText, i);
+                const opt2 = new Option(displayText, i);
+                bassSel.add(opt1);
+                chordSel.add(opt2);
             }
-        }
 
-        // --- UI VISUALIZATION & CONTROLS ---
+            // Bind Change Events
+            ['map-bass-note', 'map-chord-root', 'map-chord-type'].forEach(id => {
+                document.getElementById(id).addEventListener('change', saveCurrentMapping);
+            });
+
+            document.getElementById('btn-reset-map').addEventListener('click', () => {
+                if(selectedNote) {
+                    delete customMappings[selectedNote];
+                    selectNoteForEditing(selectedNote); // Refresh UI
+                    document.querySelector(`.key[data-note="${selectedNote}"]`).classList.remove('mapped');
+                }
+            });
+
+            // Channels
+            document.getElementById('ch-bass').addEventListener('change', e => config.bassCh = parseInt(e.target.value));
+            document.getElementById('ch-guit').addEventListener('change', e => config.guitCh = parseInt(e.target.value));
+            document.getElementById('local-sound-toggle').addEventListener('change', e => config.localSound = e.target.checked);
+            
+            buildKeyboard();
+        }
 
         function buildKeyboard() {
             const container = document.getElementById('keyboard-container');
-            container.innerHTML = '';
-            
-            const startNote = 36; // C2
-            const endNote = 64;   // E4 (Erweiterter Bereich)
-            
-            // Count White Keys for Width calculation
-            let whiteKeys = 0;
-            for(let i=startNote; i<=endNote; i++) {
-                if(![1,3,6,8,10].includes(i%12)) whiteKeys++;
-            }
-            const whiteKeyWidth = 100 / whiteKeys;
-            let whiteKeyCounter = 0;
-
-            for (let i = startNote; i <= endNote; i++) {
-                const isBlack = [1, 3, 6, 8, 10].includes(i % 12);
-                const key = document.createElement('div');
-                key.dataset.note = i;
-                
-                if (isBlack) {
-                    key.className = 'key black-key absolute bg-black border border-gray-700 z-10 rounded-b';
-                    key.style.width = (whiteKeyWidth * 0.6) + '%';
-                    key.style.height = '60%';
-                    // Position based on previous white key edge - half black key width
-                    key.style.left = `calc(${whiteKeyCounter * whiteKeyWidth}% - ${(whiteKeyWidth * 0.3)}%)`;
-                } else {
-                    key.className = 'key white-key absolute bg-white border border-gray-300 z-0 rounded-b';
-                    key.style.width = `${whiteKeyWidth}%`;
-                    key.style.height = '100%';
-                    key.style.left = `${whiteKeyCounter * whiteKeyWidth}%`;
-                    whiteKeyCounter++;
-                }
-
-                key.addEventListener('mousedown', () => noteOn(i, 100));
-                key.addEventListener('mouseup', () => noteOff(i));
-                key.addEventListener('mouseleave', () => noteOff(i));
-                container.appendChild(key);
+            // Range C2 (36) to C4 (60) for display
+            for(let i=36; i<=64; i++) {
+                const isBlack = [1,3,6,8,10].includes(i%12);
+                // Corrected alignment: Black keys hang from top (items-start on container)
+                const k = document.createElement('div');
+                k.className = `key relative rounded-b border-gray-900 border ${isBlack ? 'black-key bg-black w-6 h-24 -mx-3 z-10' : 'white-key bg-white w-8 h-40 z-0'}`;
+                k.dataset.note = i;
+                k.onclick = () => noteOn(i, 100); 
+                k.onmouseup = () => noteOff(i);
+                k.onmouseleave = () => noteOff(i);
+                container.appendChild(k);
             }
         }
 
         function highlightKey(note, active) {
             const k = document.querySelector(`.key[data-note="${note}"]`);
-            if(!k) return;
-            if(active) {
-                k.classList.add('active');
-            } else {
-                k.classList.remove('active');
-            }
+            if(k) active ? k.classList.add('active') : k.classList.remove('active');
         }
 
         function uiSignal(type) {
@@ -921,82 +582,8 @@
             setTimeout(() => el.classList.remove('on'), 50);
         }
 
-        function log(msg) {
-            const el = document.getElementById('console-log');
-            el.innerHTML = `> ${msg}<br>` + el.innerHTML;
-        }
-
-        // Bind Controls
+        // Start
         document.getElementById('start-btn').addEventListener('click', initAudio);
-        
-        // Input Config
-        document.getElementById('midi-in-channel').addEventListener('change', (e) => config.inputChannel = e.target.value);
-        
-        // Output Config
-        document.getElementById('midi-out-ch-bass').addEventListener('change', (e) => config.outputChannelBass = parseInt(e.target.value));
-        document.getElementById('midi-out-ch-guitar').addEventListener('change', (e) => config.outputChannelGuitar = parseInt(e.target.value));
-
-        // Sound Config
-        document.getElementById('local-sound-toggle').addEventListener('change', (e) => {
-            config.localSound = e.target.checked;
-            document.getElementById('local-controls').style.opacity = e.target.checked ? "1" : "0.3";
-        });
-        document.getElementById('preset-select').addEventListener('change', (e) => {
-            const p = presets[e.target.value];
-            if(p) {
-                config.waveType = p.wave;
-                config.cutoff = p.cutoff;
-                config.attack = p.att;
-                config.release = p.rel;
-                
-                // Set defaults for Helikon
-                if(e.target.value === 'helikon') {
-                    config.strumSpeed = 0.03; // Faster strumming
-                    config.smartHarmony = true; // Auto Dur/Moll
-                    document.getElementById('guitar-strum').value = 0.03;
-                    document.getElementById('smart-harmony-toggle').checked = true;
-                }
-
-                // Update UI sliders to match
-                document.getElementById('filter-cutoff').value = p.cutoff;
-                document.getElementById('env-attack').value = p.att;
-                document.getElementById('env-release').value = p.rel;
-            }
-        });
-        
-        document.getElementById('filter-cutoff').addEventListener('input', e => config.cutoff = parseInt(e.target.value));
-        document.getElementById('env-attack').addEventListener('input', e => config.attack = parseFloat(e.target.value));
-        document.getElementById('env-release').addEventListener('input', e => config.release = parseFloat(e.target.value));
-
-        // Guitar Config
-        document.getElementById('guitar-toggle').addEventListener('change', e => config.guitarEnabled = e.target.checked);
-        document.getElementById('guitar-strum').addEventListener('input', e => config.strumSpeed = parseFloat(e.target.value));
-        document.getElementById('smart-harmony-toggle').addEventListener('change', e => config.smartHarmony = e.target.checked);
-        document.getElementById('custom-remap-toggle').addEventListener('change', e => {
-            config.customRemap = e.target.checked;
-            if(config.customRemap) log("Spezial Modus: C=C, D=G");
-            else log("Standard Mapping");
-        });
-        
-        document.getElementById('btn-major').addEventListener('click', () => {
-            config.isMajor = true; 
-            config.smartHarmony = false; // Disable auto when manual is clicked
-            document.getElementById('smart-harmony-toggle').checked = false;
-            updateChordUI();
-        });
-        document.getElementById('btn-minor').addEventListener('click', () => {
-            config.isMajor = false; 
-            config.smartHarmony = false;
-            document.getElementById('smart-harmony-toggle').checked = false;
-            updateChordUI();
-        });
-
-        function updateChordUI() {
-            document.getElementById('btn-major').className = config.isMajor ? "flex-1 py-2 text-xs font-bold rounded bg-yellow-600 text-white" : "flex-1 py-2 text-xs font-bold rounded text-gray-400 hover:text-white";
-            document.getElementById('btn-minor').className = !config.isMajor ? "flex-1 py-2 text-xs font-bold rounded bg-yellow-600 text-white" : "flex-1 py-2 text-xs font-bold rounded text-gray-400 hover:text-white";
-        }
-
-        buildKeyboard();
 
     </script>
 </body>
